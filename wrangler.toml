@@ -1,0 +1,22 @@
+name = "medicine-mamma-push"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Controlla lo stato delle medicine ogni minuto
+[triggers]
+crons = ["* * * * *"]
+
+# Spazio di archiviazione dove salviamo l'iscrizione al push e l'elenco medicine.
+# Dopo aver eseguito: wrangler kv namespace create MED_KV
+# copia l'id che ti restituisce qui sotto, al posto del placeholder.
+[[kv_namespaces]]
+binding = "medicine_mamma_kv"
+id = "8fa099f9c79a45bfa534bb1e30863341"
+
+[vars]
+# Sostituisci con l'indirizzo esatto della tua pagina GitHub Pages (senza slash finale)
+ALLOWED_ORIGIN = "https://TUO-UTENTE.github.io"
+VAPID_CONTACT_EMAIL = "mailto:tuo-indirizzo@esempio.it"
+
+# NON mettere qui la chiave privata VAPID: va impostata come segreto con:
+#   wrangler secret put VAPID_PRIVATE_KEY
