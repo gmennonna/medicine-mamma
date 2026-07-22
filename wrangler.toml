@@ -10,7 +10,7 @@ crons = ["* * * * *"]
 # Dopo aver eseguito: wrangler kv namespace create MED_KV
 # copia l'id che ti restituisce qui sotto, al posto del placeholder.
 [[kv_namespaces]]
-binding = "medicine_mamma_kv"
+binding = "MED_KV"
 id = "8fa099f9c79a45bfa534bb1e30863341"
 
 [vars]
