@@ -1,5 +1,5 @@
 name = "medicine-mamma-push"
-main = "src/index.js"
+main = "index.js"
 compatibility_date = "2025-01-01"
 
 # Controlla lo stato delle medicine ogni minuto
