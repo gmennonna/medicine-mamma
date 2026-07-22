@@ -1,13 +1,31 @@
 {
-    "name": "Le mie medicine",
-    "short_name": "Medicine",
-    "start_url": "./index.html",
-    "scope": "./",
-    "display": "standalone",
-    "background_color": "#EFF4F1",
-    "theme_color": "#2F7A55",
-    "icons": [
-          { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-          { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
-    ]
+  "name": "Lumina",
+  "short_name": "Lumina",
+  "description": "Your shared life, at a glance",
+  "start_url": "/lumina/",
+  "scope": "/lumina/",
+  "display": "standalone",
+  "background_color": "#FBF8F4",
+  "theme_color": "#4A3448",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/lumina/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lumina/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lumina/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
