@@ -15,7 +15,7 @@ id = "8fa099f9c79a45bfa534bb1e30863341"
 
 [vars]
 # Sostituisci con l'indirizzo esatto della tua pagina GitHub Pages (senza slash finale)
-ALLOWED_ORIGIN = "https://TUO-UTENTE.github.io"
+ALLOWED_ORIGIN = "https://gmennonna.github.io"
 VAPID_CONTACT_EMAIL = "mailto:tuo-indirizzo@esempio.it"
 
 # NON mettere qui la chiave privata VAPID: va impostata come segreto con:
