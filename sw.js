@@ -23,6 +23,8 @@ self.addEventListener('push', (event) => {
           badge: 'icon-192.png',
           tag: data.tag || 'medicine-reminder',
           renotify: true,
+          vibrate: [200, 100, 200],
+          requireInteraction: true, // stays visible until dismissed/tapped instead of auto-hiding
     };
     event.waitUntil(self.registration.showNotification(title, options));
 });
