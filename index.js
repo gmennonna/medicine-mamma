@@ -81,7 +81,13 @@ async function checkAndSend(env) {
     const days = (med.days && med.days.length === 7) ? med.days : [true, true, true, true, true, true, true];
     if (!days[wi]) { console.log('checkAndSend: ' + med.name + ' matches time but not today (weekday index ' + wi + ')'); continue; }
 
-    const sentKey = `sent:${dateKey}:${med.id}`;
+    // Keyed by time too, not just date+id: this only exists to stop the
+    // *same* scheduled dose from re-firing if a tick somehow re-checks the
+    // same minute twice — without the time, editing a medicine's time
+    // later the same day (including re-testing it, as happened tonight)
+    // gets silently skipped as "already sent today" for a dose that was
+    // never actually attempted at the new time.
+    const sentKey = `sent:${dateKey}:${med.id}:${med.time}`;
     const alreadySent = await env.MED_KV.get(sentKey);
     if (alreadySent) { console.log('checkAndSend: ' + med.name + ' already sent today, skipping'); continue; }
 
