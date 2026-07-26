@@ -54,9 +54,12 @@ export default {
 
 async function checkAndSend(env) {
   const raw = await env.MED_KV.get(STATE_KEY);
-  if (!raw) return;
+  if (!raw) { console.log('checkAndSend: no state in KV'); return; }
   const { subscription, medicines } = JSON.parse(raw);
-  if (!subscription || !medicines || medicines.length === 0) return;
+  if (!subscription || !medicines || medicines.length === 0) {
+    console.log('checkAndSend: nothing to check (subscription=' + !!subscription + ', medicines=' + (medicines ? medicines.length : 0) + ')');
+    return;
+  }
 
   const now = new Date();
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -71,17 +74,20 @@ async function checkAndSend(env) {
   const dateKey = `${map.year}-${map.month}-${map.day}`;
   const weekdayMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
   const wi = weekdayMap[map.weekday];
+  console.log('checkAndSend: now=' + hhmm + ' (Rome) medicines=' + medicines.map(m => m.name + '@' + m.time).join(', '));
 
   for (const med of medicines) {
     if (med.time !== hhmm) continue;
     const days = (med.days && med.days.length === 7) ? med.days : [true, true, true, true, true, true, true];
-    if (!days[wi]) continue;
+    if (!days[wi]) { console.log('checkAndSend: ' + med.name + ' matches time but not today (weekday index ' + wi + ')'); continue; }
 
     const sentKey = `sent:${dateKey}:${med.id}`;
     const alreadySent = await env.MED_KV.get(sentKey);
-    if (alreadySent) continue;
+    if (alreadySent) { console.log('checkAndSend: ' + med.name + ' already sent today, skipping'); continue; }
 
+    console.log('checkAndSend: sending push for ' + med.name + ' (' + med.time + ')');
     const delivered = await sendPush(env, subscription, med);
+    console.log('checkAndSend: sendPush(' + med.name + ') -> ' + delivered);
     if (delivered !== 'gone') {
       await env.MED_KV.put(sentKey, '1', { expirationTtl: 90000 });
     }
