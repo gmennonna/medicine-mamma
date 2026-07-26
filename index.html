@@ -547,15 +547,27 @@ async function registerServiceWorker(){
   catch(e){ return null; }
 }
 
+// Tracks whether the last sync attempt actually reached the server —
+// separate from Notification.permission, which stays 'granted' even if
+// the underlying push subscription is gone or the server is unreachable.
+// Without this, the bell showed green ("all good") while the server had
+// gone months without a fresh medicines list, and nothing surfaced that.
+let lastSyncFailed = false;
+
 async function syncToServer(subscriptionJSON){
   if(!workerConfigured()) return;
   try{
-    await fetch(WORKER_URL + '/register', {
+    const res = await fetch(WORKER_URL + '/register', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ subscription: subscriptionJSON, medicines })
     });
-  }catch(e){ /* offline o server non raggiungibile: si aggiornerà al prossimo avvio */ }
+    lastSyncFailed = !res.ok;
+    if(!res.ok) console.warn('Sync promemoria fallita:', res.status);
+  }catch(e){
+    lastSyncFailed = true;
+    console.warn('Sync promemoria fallita:', e);
+  }
 }
 
 async function enablePushNotifications(){
@@ -577,12 +589,15 @@ async function enablePushNotifications(){
   return true;
 }
 
+// Re-runs the *full* subscribe-or-reuse-and-sync flow (enablePushNotifications),
+// not a weaker standalone check — a push subscription can go missing (revoked,
+// storage cleared, service worker reset) while Notification.permission stays
+// 'granted', and once granted the UI has no "Attiva" button to fall back on to
+// manually re-subscribe. This is what makes a broken subscription self-heal
+// instead of silently never syncing again.
 async function maybeSyncMedicines(){
   if(!notificationsSupported() || Notification.permission!=='granted') return;
-  const reg = await navigator.serviceWorker.getRegistration();
-  if(!reg) return;
-  const sub = await reg.pushManager.getSubscription();
-  if(sub) syncToServer(sub.toJSON());
+  await enablePushNotifications();
 }
 
 function updateReminderBanner(){
@@ -613,7 +628,14 @@ function updateReminderBanner(){
     return;
   }
   const perm = Notification.permission;
-  if(perm === 'granted'){
+  if(perm === 'granted' && lastSyncFailed){
+    banner.classList.remove('on');
+    title.textContent = 'Promemoria da risincronizzare';
+    sub.textContent = 'Il permesso è attivo ma le medicine non hanno raggiunto il server. Riprova.';
+    btn.textContent = 'Risincronizza';
+    btn.classList.remove('off');
+    btn.style.display = '';
+  } else if(perm === 'granted'){
     banner.classList.add('on');
     title.textContent = 'Promemoria attivi';
     sub.textContent = 'Arrivano anche se il telefono è bloccato o l\'app è chiusa.';
@@ -639,7 +661,7 @@ function updateBellStatusIcon(){
   dot.classList.remove('show','dot-green','dot-amber','dot-red');
   if(!notificationsSupported() || location.protocol === 'file:' || !workerConfigured()) return;
   const perm = Notification.permission;
-  if(perm === 'granted'){ dot.classList.add('show','dot-green'); }
+  if(perm === 'granted'){ dot.classList.add('show', lastSyncFailed ? 'dot-amber' : 'dot-green'); }
   else if(perm === 'denied'){ dot.classList.add('show','dot-red'); }
   else { dot.classList.add('show','dot-amber'); }
 }
@@ -957,6 +979,10 @@ function escapeHtml(str){
   if(notificationsSupported() && Notification.permission === 'granted'){
     await registerServiceWorker();
     await maybeSyncMedicines();
+    // maybeSyncMedicines can change lastSyncFailed after renderToday already
+    // drew the bell dot from the *previous* session's state — refresh it now
+    // that the fresh sync attempt has actually completed.
+    updateBellStatusIcon();
   }
   setInterval(()=>{ if(document.getElementById('screen-today').classList.contains('active')) renderToday(); }, 60000);
 })();
