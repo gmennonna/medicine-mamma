@@ -89,7 +89,6 @@ async function checkAndSend(env) {
 }
 
 async function sendPush(env, subscription, med) {
-  const privateJWK = JSON.parse(env.VAPID_PRIVATE_KEY);
   const message = {
     payload: {
       title: 'È ora di prendere: ' + med.name,
@@ -102,6 +101,11 @@ async function sendPush(env, subscription, med) {
   };
 
   try {
+    // Parsing the secret lives inside this try too now: a malformed
+    // VAPID_PRIVATE_KEY used to throw here uncaught, crashing the whole
+    // scheduled run (and every other medicine due in the same tick) with
+    // no record that a send was ever attempted — silent and total.
+    const privateJWK = JSON.parse(env.VAPID_PRIVATE_KEY);
     const { endpoint, headers, body } = await buildPushHTTPRequest({ privateJWK, subscription, message });
     const res = await fetch(endpoint, { method: 'POST', headers, body });
 

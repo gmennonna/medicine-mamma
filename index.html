@@ -521,7 +521,7 @@ async function saveHistory(){
 
 /* ---------------- PROMEMORIA (NOTIFICHE PUSH) ---------------- */
 // Chiave pubblica VAPID: puoi lasciarla qui, è pubblica per definizione.
-const VAPID_PUBLIC_KEY = 'BEzpuu5q8wFODO0BGnHZ5y9Yys87x5KI71AJB7qn8rH6zZUZ-UvrLcW27XnM3GtHjTNRF7rrktu9suPkJz-xb4I';
+const VAPID_PUBLIC_KEY = 'BGrECdJSk1rsIm7t3kkdCI6cFt8RSM8mtTTjUZVw3Ripu3rZgSMH3PxwMa7_qYxwi7ehBypkN4iITCSvq2x2LOQ';
 // Sostituisci con l'indirizzo del tuo Cloudflare Worker dopo il deploy, es:
 // 'https://medicine-mamma-push.tuo-account.workers.dev'
 const WORKER_URL = 'https://medicine-mamma-push.g-mennonna.workers.dev';
@@ -570,6 +570,12 @@ async function syncToServer(subscriptionJSON){
   }
 }
 
+function subscriptionKeyMatches(sub){
+  const current = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+  const used = new Uint8Array(sub.options.applicationServerKey);
+  return current.length === used.length && current.every((b,i)=>b===used[i]);
+}
+
 async function enablePushNotifications(){
   if(!notificationsSupported()) return false;
   const perm = await Notification.requestPermission();
@@ -577,6 +583,16 @@ async function enablePushNotifications(){
   const reg = await registerServiceWorker();
   if(!reg) return false;
   let sub = await reg.pushManager.getSubscription();
+  // A subscription is signed for whichever VAPID public key was used to
+  // create it. If that key ever changes server-side (e.g. after rotating
+  // a lost/corrupted private key, as happened once already), an old
+  // subscription silently stops working — the server can't sign a JWT
+  // the push service will accept for it. Detect and replace it instead
+  // of reusing a subscription that can never be delivered to again.
+  if(sub && !subscriptionKeyMatches(sub)){
+    try{ await sub.unsubscribe(); }catch(e){ /* ignore, we'll try to resubscribe anyway */ }
+    sub = null;
+  }
   if(!sub){
     try{
       sub = await reg.pushManager.subscribe({
